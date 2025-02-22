@@ -27,6 +27,8 @@ Shader "Unlit/Water"
             {
                 float4 vertex : POSITION;
                 float2 uv : TEXCOORD0;
+
+                // zatrazimo podatke o normalama
                 float3 normal : NORMAL;
             };
 
@@ -35,7 +37,9 @@ Shader "Unlit/Water"
                 float2 uv : TEXCOORD0;
                 UNITY_FOG_COORDS(1)
                 float4 vertex : SV_POSITION;
-                float4 objectVert : TEXCOORD1;
+
+                // dodamo podatak o poziciji 
+                float height : TEXCOORD1;
             };
 
             sampler2D _MainTex;
@@ -50,11 +54,12 @@ Shader "Unlit/Water"
             {
                 v2f o;
 
-                o.objectVert = v.vertex;
-                o.objectVert.xyz += _Amplitude * v.normal.xyz * sin(v.vertex.x * _Frequency + _Time.y);
+                // izracunamo visinu vala za trenutnu x koordinatu u ovisnosti o frekvenciji i vremenu
+                o.height = sin(v.vertex.x * _Frequency + _Time.y);
+                // promijenimo kordinate vrha u smjeru normale u ovisnosti o izracunatoj visini vala
+                v.vertex.xyz += _Amplitude * v.normal.xyz * o.height;
 
-
-                o.vertex = UnityObjectToClipPos(o.objectVert);
+                o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = TRANSFORM_TEX(v.uv, _MainTex);
                 UNITY_TRANSFER_FOG(o,o.vertex);
                 return o;
@@ -62,7 +67,8 @@ Shader "Unlit/Water"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                return lerp(_ColorBottom, _ColorTop, (i.objectVert.z / _Amplitude + 1) / 2);
+                float height01 = (i.height + 1) * 0.5; // prebacimo visinu s raspona [-1, 1] u [0, 1]
+                return lerp(_ColorBottom, _ColorTop, height01); // napravimo linearni prijelaz iz jedne boje u drugu u ovisnosti o visini vala u toj tocki
             }
             ENDCG
         }
