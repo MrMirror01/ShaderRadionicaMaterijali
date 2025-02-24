@@ -134,7 +134,6 @@ GameObject:
   - component: {fileID: 110642912}
   - component: {fileID: 110642911}
   - component: {fileID: 110642910}
-  - component: {fileID: 110642909}
   m_Layer: 0
   m_Name: BlinPhongMonkey
   m_TagString: Untagged
@@ -142,27 +141,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!65 &110642909
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 110642908}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &110642910
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -515,7 +493,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
   m_LocalRotation: {x: 0.11472697, y: -0, z: -0, w: 0.99339706}
-  m_LocalPosition: {x: 0, y: 2.55, z: -8.23}
+  m_LocalPosition: {x: 0, y: 1.4, z: -4.31}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
