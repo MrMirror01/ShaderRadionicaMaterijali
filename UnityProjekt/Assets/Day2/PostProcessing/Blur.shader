@@ -53,12 +53,14 @@ Shader "Hidden/Blur"
             {
                 float4 col = 0;
 
+                // iteriramo po okolnim pikselima (7x7)
                 for (int x = -3; x <= 3; x++) {
                     for (int y = -3; y <= 3; y++) {
+                        // uzorkujemo teksturu za svaki piksel i dodamo boju
                         col += tex2D(_MainTex, i.uv + float2(x, y) * _MainTex_TexelSize.xy);
                     }
                 }
-                col /= 49;
+                col /= 49; // podijelimo sa brojem uzorkovanih piksela kako bi dobili prosjek
 
                 return col;
             }
@@ -70,6 +72,7 @@ Shader "Hidden/Blur"
             Name "Gaussian Blur"
 
             CGPROGRAM
+            // 2D kernel matrica za gaussian blur
             static const float gaussianKernel2D[49] = {
                 0.0000, 0.0001, 0.0006, 0.0011, 0.0006, 0.0001, 0.0000,
                 0.0001, 0.0020, 0.0109, 0.0190, 0.0109, 0.0020, 0.0001,
