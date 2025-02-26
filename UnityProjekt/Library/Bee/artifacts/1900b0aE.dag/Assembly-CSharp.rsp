@@ -357,6 +357,7 @@
 "Assets/Day3/PostProcessing/BlurDriver.cs"
 "Assets/Day3/PostProcessing/FogDriver.cs"
 "Assets/Day3/PostProcessing/VignetteDriver.cs"
+"Assets/Day4/RayTracingDriver.cs"
 -langversion:9.0
 
 /deterministic
