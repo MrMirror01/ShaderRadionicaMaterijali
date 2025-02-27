@@ -69,6 +69,9 @@ Shader "Hidden/RayTracing"
 
             sampler2D _MainTex;
 
+            // broj framea
+            uint _Frame;
+
             // parametri ray tracinga
             int _RaysPerFrame;
             int _MaxBounces;
@@ -128,42 +131,36 @@ Shader "Hidden/RayTracing"
                 return ranDir * sign(dot(ranDir, normal));
             }
 
-            // funkcija za izracun presjeka zrake i kugle, napisao ChatGPT :)
-            HitInfo raySphereIntersection(Ray ray, Sphere sphere) {
-                HitInfo hitInfo;
-                hitInfo.didHit = false;
+            HitInfo raySphereIntersection(Ray ray, Sphere s)
+            {
+                HitInfo hit;
                 
-                // Compute the vector from the ray origin to the sphere center
-                float3 oc = ray.position - sphere.position;
+                float3 L = s.position - ray.position; // vektor od izvora zrake do centra kugle
+                float Tca = dot(L, ray.direction); // udaljenost od izvora zrake do tocke na zraki koji je pod pravim kutom od centra
                 
-                // Compute quadratic coefficients
-                float a = dot(ray.direction, ray.direction);
-                float b = 2.0 * dot(oc, ray.direction);
-                float c = dot(oc, oc) - (sphere.radius * sphere.radius);
-                float discriminant = b * b - 4.0 * a * c;
-                
-                // If the discriminant is negative, there is no real root (no intersection)
-                if (discriminant < 0.0) {
-                    return hitInfo;
+                // gleda na komplet drugu stranu ray
+                if (Tca < 0.0)
+                {
+                    hit.didHit = false;
+                    return hit;
                 }
                 
-                // Find the nearest valid intersection point
-                float t = (-b - sqrt(discriminant)) / (2.0 * a);
-                if (t < 0.0) {
-                    t = (-b + sqrt(discriminant)) / (2.0 * a);
-                    if (t < 0.0) {
-                        return hitInfo;
-                    }
+                float d = sqrt(length(L) * length(L) - Tca * Tca);
+                if (d > s.radius)
+                {
+                    hit.didHit = false;
+                    return hit;
                 }
                 
-                // Populate the hit information
-                hitInfo.didHit = true;
-                hitInfo.position = ray.position + t * ray.direction;
-                hitInfo.distance = t;
-                hitInfo.normal = normalize(hitInfo.position - sphere.position);
-                hitInfo.material = sphere.material;
+                float Thc = sqrt(s.radius * s.radius - d * d); // udaljenost od intersectiona do tocke na zraki koja je pod pravim kutom od centra
+                float3 intersection = ray.position + ray.direction * (Tca - Thc);
                 
-                return hitInfo;
+                hit.didHit = true;
+                hit.position = intersection;
+                hit.distance = length(ray.position - intersection);
+                hit.normal = normalize(intersection - s.position);
+                hit.material = s.material;
+                return hit;
             }
 
             // pronalazi najblizu tocku koju je zraka pogodila
@@ -188,7 +185,7 @@ Shader "Hidden/RayTracing"
 
             // prati odbijanje zrake po sceni te izracuna boju piksela
             float3 trace(Ray ray, inout uint randomState) {
-                float4 incomingLight = 0;
+                float3 incomingLight = 0;
 
                 // bacamo zraku MaxBounces puta ili dok ne promasi sve objekte
                 for (int i = 0; i < _MaxBounces; i++) {
@@ -198,7 +195,7 @@ Shader "Hidden/RayTracing"
                     // ako je zraka pogodila nesto
                     if (hit.didHit) {
                         // izracunamo boju i jacinu svjetla koje dolazi iz objekta
-                        float4 emmitedLight = hit.material.emmission * hit.material.emmissionColor;
+                        float3 emmitedLight = hit.material.emmission * hit.material.emmissionColor;
 
                         // dodamo svjetlo (pobojano u boju "zrake") u varijablu koja pamti ukupnu kolicinu svjetlosti koju je zraka vidjela
                         incomingLight += emmitedLight * ray.color;
@@ -228,9 +225,9 @@ Shader "Hidden/RayTracing"
                 // izracunamo jedinstven broj koji pridodjelimo svakom pikselu
                 float2 pixelPos = i.uv * _ScreenParams.xy;
                 uint pixelIndex = pixelPos.x * _ScreenParams.x + pixelPos.y;
-                
+
                 // taj broj koristimo kao seed za generiranje nasumicnih brojeva
-                uint randomState = pixelIndex;
+                uint randomState = pixelIndex + _Frame * 757283;
 
                 // zraka krece iz kamere u smjeru piksela te je na pocetku bijela
                 Ray ray;
@@ -244,7 +241,6 @@ Shader "Hidden/RayTracing"
                     col += trace(ray, randomState);
                 }
                 col /= _RaysPerFrame;
-
 
                 return float4(col, 1); // vratimo izracunatu boju
             }

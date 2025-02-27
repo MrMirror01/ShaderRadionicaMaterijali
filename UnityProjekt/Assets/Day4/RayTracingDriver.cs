@@ -2,10 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 
 public class RayTracingDriver : MonoBehaviour
 {
-    private Material mat;
 
     // klasa koja sluzi samo za sucelje koje korisnik vidi
     [Serializable] // oznacava da hocemo editirati u inspektoru
@@ -46,6 +46,13 @@ public class RayTracingDriver : MonoBehaviour
         RayTraceMaterial material;
     };
 
+    private Material rayTraceMat;
+    private Material averageMat;
+    private RenderTexture frameTex;
+    private RenderTexture averageTex;
+
+    private int frame = 1;
+
     public int raysPerFrame; // koliko zraka bacamo svaki frame
     public int maxBounces; // koliko se maksimalno puta zraka moze odbiti
 
@@ -53,6 +60,7 @@ public class RayTracingDriver : MonoBehaviour
 
     public List<Sphere> sphereList; // lista kugli koja je vidljiva korisniku
     private SphereStruct[] spheres; // te kugle u obliku u kojem ih mozemo proslijediti shaderu
+    private ComputeBuffer sphereBuffer;
 
     // funkcija koja azurira listu kugli u shaderu ovisno o postavkama korisnika
     private void SetSpheres()
@@ -65,46 +73,76 @@ public class RayTracingDriver : MonoBehaviour
             spheres[i] = new SphereStruct(s);
         }
 
-        mat.SetInt("_SphereCount", sphereList.Count);
+        rayTraceMat.SetInt("_SphereCount", sphereList.Count);
 
         //konstruiramo buffer od tih podataka te ga proslijedimo shaderu
-        ComputeBuffer sphereBuffer = new ComputeBuffer(sphereList.Count, 4 * (3+1+4+1+4));
+        if (sphereBuffer != null) sphereBuffer.Release();
+        sphereBuffer = new ComputeBuffer(sphereList.Count, 4 * (3+1+4+1+4));
         sphereBuffer.SetData(spheres);
-        mat.SetBuffer("_Spheres", sphereBuffer);
+        rayTraceMat.SetBuffer("_Spheres", sphereBuffer);
     }
 
     private void SetCameraProperties()
     {
-        mat.SetVector("_CameraPos", Camera.main.transform.position); // pozicija kamere
+        rayTraceMat.SetVector("_CameraPos", Camera.main.transform.position); // pozicija kamere
 
         // izracunamo dimenzije near clip plane-a
         float planeHeight = Camera.main.nearClipPlane * Mathf.Tan(Camera.main.fieldOfView * 0.5f * Mathf.Deg2Rad) * 2f;
         float planeWidth = planeHeight * Camera.main.aspect;
-        mat.SetVector("_NearPlane", new Vector3(planeWidth, planeHeight, Camera.main.nearClipPlane));
+        rayTraceMat.SetVector("_NearPlane", new Vector3(planeWidth, planeHeight, Camera.main.nearClipPlane));
 
         // proslijedimo object to world space matricu kamere
-        mat.SetMatrix("_CameraObjectToWorldMat", Camera.main.transform.localToWorldMatrix);
+        rayTraceMat.SetMatrix("_CameraObjectToWorldMat", Camera.main.transform.localToWorldMatrix);
     }
 
     private void OnRenderImage(RenderTexture source, RenderTexture destination)
     {
-        if (mat == null)
+        if (rayTraceMat == null)
         {
-            mat = new Material(Shader.Find("Hidden/RayTracing"));
+            rayTraceMat = new Material(Shader.Find("Hidden/RayTracing"));
+            averageMat = new Material(Shader.Find("Hidden/Average"));
+
+            averageTex = new RenderTexture(source.descriptor);
+            averageTex.graphicsFormat = GraphicsFormat.R32G32B32A32_SFloat;
+            averageTex.Create();
+            frameTex = new RenderTexture(source.descriptor);
+            frameTex.graphicsFormat = GraphicsFormat.R32G32B32A32_SFloat;
+            frameTex.Create();
+
+            SetSpheres(); // postavimo parametre kugli
         }
 
-        SetSpheres(); // postavimo parametre kugli
 
         SetCameraProperties(); // postavimo parametre kamere
 
         // postavimo ostale parametre shadera
-        mat.SetInt("_RaysPerFrame", raysPerFrame);
-        mat.SetInt("_MaxBounces", maxBounces);
+        rayTraceMat.SetInt("_RaysPerFrame", raysPerFrame);
+        rayTraceMat.SetInt("_MaxBounces", maxBounces);
 
         // postavimo boju neba
-        mat.SetColor("_SkyColor", skyColor);
+        rayTraceMat.SetColor("_SkyColor", skyColor);
+
+        // postavimo trenutni frame
+        rayTraceMat.SetInt("_Frame", frame);
+        rayTraceMat.SetInt("_RandomSeed", UnityEngine.Random.Range(0, int.MaxValue));
 
         // pokrenemo shader na slici
-        Graphics.Blit(source, destination, mat);
+        Graphics.Blit(source, frameTex, rayTraceMat);
+
+        averageMat.SetTexture("_AverageTex", averageTex);
+        averageMat.SetInt("_Frame", frame);
+        Graphics.Blit(frameTex, averageTex, averageMat);
+        frame++;
+
+        Graphics.Blit(averageTex, destination);
+    }
+
+    // na kraju moramo izbrisati teksture jer ce inace njihova memorija ostati zauzeta (memory leak)
+    private void OnDestroy()
+    {
+        sphereBuffer.Release();
+
+        averageTex.Release();
+        frameTex.Release();
     }
 }

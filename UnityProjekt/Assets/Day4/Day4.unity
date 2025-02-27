@@ -326,8 +326,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1017932893}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 7.69, y: 9.8, z: 34.7}
-  m_LocalScale: {x: 37.94562, y: 37.94562, z: 37.94562}
+  m_LocalPosition: {x: 45, y: 37.6, z: 84}
+  m_LocalScale: {x: 101.20299, y: 101.20299, z: 101.20299}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -733,14 +733,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1924305139}
-  m_LocalRotation: {x: 0.07234125, y: -0, z: -0, w: 0.99738}
-  m_LocalPosition: {x: -0.25, y: 2.54, z: -6.94}
+  m_LocalRotation: {x: 0.14607751, y: -0, z: -0, w: 0.9892732}
+  m_LocalPosition: {x: -0.25, y: 8, z: -14}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 8.297, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 16.799, y: 0, z: 0}
 --- !u!114 &1924305143
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -753,9 +753,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f64cf5ab0646f5642b9ff731e02fec18, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  raysPerFrame: 50
-  maxBounces: 10
-  skyColor: {r: 0.4901961, g: 0.60784316, b: 0.77647066, a: 0}
+  raysPerFrame: 1
+  maxBounces: 5
+  skyColor: {r: 0.6556604, g: 0.9081761, b: 1, a: 0}
   sphereList:
   - transform: {fileID: 1832532077}
     color: {r: 1, g: 1, b: 1, a: 0}
@@ -775,7 +775,7 @@ MonoBehaviour:
     emmissionColor: {r: 0, g: 0, b: 0, a: 0}
   - transform: {fileID: 1017932897}
     color: {r: 0, g: 0, b: 0, a: 0}
-    emmission: 20
+    emmission: 15
     emmissionColor: {r: 1, g: 1, b: 1, a: 0}
 --- !u!1 &1958486919
 GameObject:
