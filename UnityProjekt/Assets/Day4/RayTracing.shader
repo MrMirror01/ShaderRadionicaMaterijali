@@ -51,6 +51,23 @@ Shader "Hidden/RayTracing"
                 Material material;
             };
 
+            struct Triangle
+            {
+                float3 posA;
+                float3 posB;
+                float3 posC;
+                float3 normalA;
+                float3 normalB;
+                float3 normalC;
+            };
+            
+            struct Mesh
+            {
+                int firstTriangleIdx;
+                int numTriangles;
+                Material material;
+            };
+
             // zraka
             struct Ray {
                 float3 position;
@@ -87,6 +104,12 @@ Shader "Hidden/RayTracing"
             // buffer sa kuglama
             int _SphereCount;
             StructuredBuffer<Sphere> _Spheres;
+
+            // bufferi za trokute i mesheve
+            int _TriangleCount;
+            StructuredBuffer<Triangle> _Triangles;
+            int _MeshCount;
+            StructuredBuffer<Mesh> _Meshes;
 
             // funkcija koja generira pseudonasumican broj od 0 do 0xffffffff (2^32-1) za pojedini state
             // inout oznacava da ce promijena na state biti odrazena i u pozivajucoj funkciji (kao da koristimo pointer)
@@ -129,6 +152,38 @@ Shader "Hidden/RayTracing"
             float3 randomInsideHemisphere(float3 normal, inout uint state) {
                 float3 ranDir = randomDirection(state);
                 return ranDir * sign(dot(ranDir, normal));
+            }
+
+            HitInfo rayTriangleIntersection(Ray ray, Triangle tri, Material mat)
+            {
+                float3 edgeAB = tri.posB - tri.posA;
+                float3 edgeAC = tri.posC - tri.posA;
+                float3 normalVector = cross(edgeAB, edgeAC);
+                float3 ao = ray.position - tri.posA;
+                float3 dao = cross(ao, ray.direction);
+            
+                float determinant = -dot(ray.direction, normalVector);
+                float invDet = 1 / determinant;
+            				
+            	// Calculate dst to triangle & barycentric coordinates of intersection point
+                float dst = dot(ao, normalVector) * invDet;
+                float u = dot(edgeAC, dao) * invDet;
+                float v = -dot(edgeAB, dao) * invDet;
+                float w = 1 - u - v;
+                
+            	// Initialize hit info
+                HitInfo hit;
+                // for backface culling use: (determinant >= 1E-6)
+                // for no backface culling use: ((abs(determinant) >= 1E-6) -> careful ka zbog float precision ti zavrsi ray nutra v objektu i onda je stuck
+                hit.didHit = ((determinant >= 1E-6) && (dst >= 0) && (u >= 0) && (v >= 0) && (w >= 0));
+                hit.position = ray.position + ray.direction * dst;
+                hit.distance = dst;
+                hit.material = mat;
+
+                float3 normal = normalize(tri.normalA * w + tri.normalB * u + tri.normalC * v);
+                hit.normal = normal;
+
+                return hit;
             }
 
             HitInfo raySphereIntersection(Ray ray, Sphere s)
@@ -176,6 +231,22 @@ Shader "Hidden/RayTracing"
                     if (hit.didHit) {
                         if (hit.distance < bestHit.distance){
                             bestHit = hit;
+                        }
+                    }
+                }
+
+                for (int m = 0; m < _MeshCount; m++) {
+                    int start = _Meshes[m].firstTriangleIdx;
+                    int end = start + _Meshes[m].numTriangles;
+                    for (int t = start; t < end; t++) {
+                        Triangle tri = _Triangles[t];
+
+                        HitInfo hit = rayTriangleIntersection(ray, tri, _Meshes[m].material);
+
+                        if (hit.didHit) {
+                            if (hit.distance < bestHit.distance){
+                                bestHit = hit;
+                            }
                         }
                     }
                 }
